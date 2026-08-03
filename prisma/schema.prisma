@@ -1,0 +1,110 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  name      String?
+  role      Role     @default(USER)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Event {
+  event_id    String      @id @default(uuid())
+  name        String
+  description String?
+  venue_id    String
+  date        DateTime
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  status      EventStatus @default(on_sale)
+  venue       Venue       @relation(fields: [venue_id], references: [venue_id])
+}
+
+model Venue {
+  venue_id  String   @id @default(uuid())
+  name      String
+  address   String
+  city      String
+  capacity  Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  events    Event[]
+}
+
+enum EventStatus {
+  on_sale
+  sold_out
+  cancelled
+}
+
+model Seat {
+  seat_id    String   @id @default(uuid())
+  event_id   String
+  section    String
+  row        String
+  number     String
+  tier       SeatTier
+  base_price Float
+}
+
+enum SeatTier {
+  floor
+  premium
+  general
+}
+
+model SeatStatus {
+  seat_status_id String         @id @default(uuid())
+  seat_id        String
+  event_id       String
+  status         SeatStatusEnum
+  reserved_by    String?
+  reserved_until DateTime?
+  order_id       String?
+}
+
+enum SeatStatusEnum {
+  available
+  reserved
+  sold
+}
+
+model Order {
+  order_id    String      @id @default(uuid())
+  user_id     String
+  event_id    String
+  seat_ids    String[]
+  total_price Float
+  status      OrderStatus @default(pending)
+  payment_id  String?
+}
+
+enum OrderStatus {
+  pending
+  confirmed
+  cancelled
+}
+
+
+
+model Performer {
+  performer_id String   @id @default(uuid())
+  name         String
+  bio          String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
