@@ -20,6 +20,9 @@ model User {
   role      Role     @default(USER)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  orders  Order[]
+  tickets Ticket[]
 }
 
 model Event {
@@ -28,10 +31,15 @@ model Event {
   description String?
   venue_id    String
   date        DateTime
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
-  status      EventStatus @default(on_sale)
-  venue       Venue       @relation(fields: [venue_id], references: [venue_id])
+  price            Float
+  capacity         Int
+  tickets_reserved Int         @default(0)
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+  status           EventStatus @default(on_sale)
+  venue            Venue       @relation(fields: [venue_id], references: [venue_id])
+  order_id         Order[]
+  tickets          Ticket[]
 }
 
 model Venue {
@@ -49,54 +57,37 @@ enum EventStatus {
   on_sale
   sold_out
   cancelled
+  completed
 }
 
-model Seat {
-  seat_id    String   @id @default(uuid())
-  event_id   String
-  section    String
-  row        String
-  number     String
-  tier       SeatTier
-  base_price Float
-}
 
-enum SeatTier {
-  floor
-  premium
-  general
-}
-
-model SeatStatus {
-  seat_status_id String         @id @default(uuid())
-  seat_id        String
-  event_id       String
-  status         SeatStatusEnum
-  reserved_by    String?
-  reserved_until DateTime?
-  order_id       String?
-}
-
-enum SeatStatusEnum {
-  available
-  reserved
-  sold
-}
 
 model Order {
   order_id    String      @id @default(uuid())
   user_id     String
   event_id    String
-  seat_ids    String[]
+  quantity    Int
+  unit_price  Float
   total_price Float
   status      OrderStatus @default(pending)
   payment_id  String?
+  expires_at  DateTime    // hold expiry while pending
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  user    User     @relation(fields: [user_id], references: [id])
+  event   Event    @relation(fields: [event_id], references: [event_id])
+  tickets Ticket[]
+
+  @@index([event_id])
+  @@index([user_id])
 }
 
 enum OrderStatus {
   pending
   confirmed
   cancelled
+  expired
 }
 
 
@@ -107,4 +98,28 @@ model Performer {
   bio          String?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+}
+
+model Ticket {
+  ticket_id     String       @id @default(uuid())
+  order_id      String
+  event_id      String
+  user_id       String
+  code          String       @unique @default(uuid())
+  status        TicketStatus @default(valid)
+  checked_in_at DateTime?
+  createdAt     DateTime     @default(now())
+
+  order Order @relation(fields: [order_id], references: [order_id])
+  event Event @relation(fields: [event_id], references: [event_id])
+  user  User  @relation(fields: [user_id], references: [id])
+
+  @@index([event_id])
+  @@index([user_id])
+}
+
+enum TicketStatus {
+  valid
+  used
+  cancelled
 }

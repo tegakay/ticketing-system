@@ -5,6 +5,8 @@ export const createEventSchema = z.object({
   description: z.string().max(200).optional(),
   date: z.iso.datetime(),
   venue_id: z.string().min(1),
+  price: z.number().positive(),
+  capacity: z.number().int().positive(),
 });
 
 export const updateEventSchema = z
@@ -12,7 +14,9 @@ export const updateEventSchema = z
     name: z.string().min(2).max(100).optional(),
     description: z.string().max(200).optional(),
     date: z.iso.datetime().optional(),
-    venue_id: z.string().optional()
+    venue_id: z.string().optional(),
+    price: z.number().positive().optional(),
+    capacity: z.number().int().positive().optional(),
   })
   .refine((data) => Object.keys(data).length > 0, {
     message: 'At least one field must be provided',
