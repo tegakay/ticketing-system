@@ -68,9 +68,27 @@ export async function reserveTickets(req: Request, res: Response) {
   if (!eventId) return res.status(400).json({ error: 'Event id is required' });
   const { quantity } = req.body;
 
+   const idempotencyKey = req.header('Idempotency-Key');
+    if (!idempotencyKey) {
+    return res.status(400).json({ error: 'Idempotency-Key header is required' });
+  }
+
   const event = await prisma.event.findUnique({ where: { event_id: eventId } });
   if (!event || event.status !== 'on_sale') {
     return res.status(400).json({ error: 'Event is not open for booking' });
+  }
+
+  const existing = await prisma.order.findUnique({
+    where: {
+      user_id_idempotency_key: {
+        user_id: userId,
+        idempotency_key: idempotencyKey,
+      },
+    },
+  });
+
+  if (existing) {
+    return res.status(200).json({ order: existing });
   }
 
   const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
