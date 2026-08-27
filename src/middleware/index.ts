@@ -1,4 +1,5 @@
 import express, { Express } from 'express';
+import {metricsMiddleware} from './metrics.js';
 
 /**
  * Registers global request-parsing middleware. Kept separate from the error
@@ -7,6 +8,7 @@ import express, { Express } from 'express';
 export function registerGlobalMiddlewares(app: Express): void {
   app.use(express.json());
   app.use(express.urlencoded({ extended: true }));
+  app.use(metricsMiddleware);
 }
 
 export { AppError, errorHandler, notFoundHandler } from './errorHandler';
