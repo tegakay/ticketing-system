@@ -2,11 +2,13 @@ import type { Request, Response } from "express";
 import { prisma } from "../lib/prisma.js";
 
 export async function listEvents(_req: Request, res: Response) {
+  // we should add query params to include venue, tickets, etc. but for now just include venue
   const events = await prisma.event.findMany({ include: { venue: true } });
   return res.json(events);
 }
 
 export async function getEvent(req: Request, res: Response) {
+  // we should add query params to include venue, tickets, etc. but for now just include venue
   const event = await prisma.event.findUnique({
     where: { event_id: req.params.id },
     include: { venue: true },
@@ -109,7 +111,7 @@ export async function reserveTickets(req: Request, res: Response) {
     }
 
     // 3. Order row — this IS the hold's record, not a separate link step
-    return tx.order.create({
+    let order = await tx.order.create({
       data: {
         user_id: userId,
         event_id: eventId,
@@ -118,6 +120,16 @@ export async function reserveTickets(req: Request, res: Response) {
         total_price: event.price * quantity,
         status: 'pending',
         expires_at: expiresAt,
+      },
+    });
+
+    //Update ticket available i n the event table
+    return await tx.event.update({
+      where: { event_id: eventId },
+      data: {
+        tickets_reserved: {
+          increment: quantity,
+        },
       },
     });
   }).catch((err) => {

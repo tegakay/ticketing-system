@@ -18,6 +18,11 @@ export async function handlePaymentWebhook(req: Request, res: Response) {
     return res.json(order);
       break;
     case 'checkout.session.expired':
+      order = await prisma.order.update({
+        where: { order_id: order_id },
+        data: {  status: 'cancelled' },
+    });
+      break;
     case 'Failed':
         order = await prisma.order.update({
         where: { order_id: order_id },
