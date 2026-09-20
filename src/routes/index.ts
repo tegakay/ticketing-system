@@ -15,6 +15,6 @@ router.use('/auth', authRoutes);
 router.use('/events', eventRoutes);
 router.use('/venues', venueRoutes);
 router.use('/orders', orderRoutes);
-router.use('/payments', paymentRoutes);
+router.use('/webhook', paymentRoutes);
 
 export default router;

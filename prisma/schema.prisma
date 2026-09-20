@@ -40,6 +40,9 @@ model Event {
   venue            Venue       @relation(fields: [venue_id], references: [venue_id])
   order_id         Order[]
   tickets          Ticket[]
+  performer_id String?
+  performer    Performer? @relation(fields: [performer_id], references: [performer_id])
+
 }
 
 model Venue {
@@ -100,6 +103,7 @@ model Performer {
   bio          String?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+  events Event[]
 }
 
 model Ticket {
