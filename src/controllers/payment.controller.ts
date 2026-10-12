@@ -11,22 +11,54 @@ export async function handlePaymentWebhook(req: Request, res: Response) {
 
      switch (payment_status) {
     case 'success':
-       order = await prisma.order.update({
-        where: { order_id: order_id },
-        data: {  status: 'confirmed' },
+      const confirmed = await prisma.$transaction(async (tx) => {
+    const updated = await tx.order.update({
+      where: { order_id },
+      data: { status: 'confirmed' },
     });
-    return res.json(order);
+    const ticketData = Array.from({ length: updated.quantity }).map(() => ({
+      order_id: updated.order_id,
+      event_id: updated.event_id,
+      user_id: updated.user_id,
+    }));
+    await tx.ticket.createMany({ data: ticketData });
+    return updated;
+  });
+  return res.json(confirmed);
+    //    order = await prisma.order.update({
+    //     where: { order_id: order_id },
+    //     data: {  status: 'confirmed' },
+    // });
       break;
     case 'checkout.session.expired':
       order = await prisma.order.update({
         where: { order_id: order_id },
         data: {  status: 'cancelled' },
     });
+    //Update the Event's tickets_reserved count by decrementing the quantity of tickets in the order
+    return await prisma.event.update({
+      where: { event_id: order.event_id },
+      data: {
+        tickets_reserved: {
+          decrement: order.quantity,
+        },
+      },
+    });
       break;
     case 'Failed':
         order = await prisma.order.update({
         where: { order_id: order_id },
         data: {  status: 'cancelled' },
+    });
+
+     //Update the Event's tickets_reserved count by decrementing the quantity of tickets in the order
+    return await prisma.event.update({
+      where: { event_id: order.event_id },
+      data: {
+        tickets_reserved: {
+          decrement: order.quantity,
+        },
+      },
     });
       break;
   }

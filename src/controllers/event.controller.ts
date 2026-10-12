@@ -1,11 +1,42 @@
 import type { Request, Response } from "express";
 import { prisma } from "../lib/prisma.js";
 
-export async function listEvents(_req: Request, res: Response) {
-  // we should add query params to include venue, tickets, etc. but for now just include venue
-  const events = await prisma.event.findMany({ include: { venue: true } });
-  return res.json(events);
+// export async function listEvents(req: Request, res: Response) {
+//   // we should add query params to include venue, tickets, etc. but for now just include venue
+//   const events = await prisma.event.findMany({ include: { venue: true } });
+//   return res.json(events);
+// }
+
+export async function listEvents(req: Request, res: Response) {
+  const { keyword, city, startDate, endDate, page = '1', pageSize = '20' } = req.query;
+
+  const where: any = { status: 'on_sale' };
+  if (keyword) {
+    where.OR = [
+      { name: { contains: String(keyword), mode: 'insensitive' } },
+      { description: { contains: String(keyword), mode: 'insensitive' } },
+    ];
+  }
+  if (city) where.venue = { city: { equals: String(city), mode: 'insensitive' } };
+  if (startDate || endDate) {
+    where.date = {
+      ...(startDate ? { gte: new Date(String(startDate)) } : {}),
+      ...(endDate ? { lte: new Date(String(endDate)) } : {}),
+    };
+  }
+
+  const take = Math.min(Number(pageSize), 50);
+  const skip = (Number(page) - 1) * take;
+
+  const [events, total] = await Promise.all([
+    prisma.event.findMany({ where, include: { venue: true }, skip, take, orderBy: { date: 'asc' } }),
+    prisma.event.count({ where }),
+  ]);
+
+  return res.json({ events, total, page: Number(page), pageSize: take });
 }
+
+
 
 export async function getEvent(req: Request, res: Response) {
   // we should add query params to include venue, tickets, etc. but for now just include venue
@@ -111,7 +142,7 @@ export async function reserveTickets(req: Request, res: Response) {
     }
 
     // 3. Order row — this IS the hold's record, not a separate link step
-    let order = await tx.order.create({
+    let newOrder = await tx.order.create({
       data: {
         user_id: userId,
         event_id: eventId,
@@ -122,16 +153,17 @@ export async function reserveTickets(req: Request, res: Response) {
         expires_at: expiresAt,
       },
     });
+     return newOrder;
 
     //Update ticket available i n the event table
-    return await tx.event.update({
-      where: { event_id: eventId },
-      data: {
-        tickets_reserved: {
-          increment: quantity,
-        },
-      },
-    });
+    // return await tx.event.update({
+    //   where: { event_id: eventId },
+    //   data: {
+    //     tickets_reserved: {
+    //       increment: quantity,
+    //     },
+    //   },
+    // });
   }).catch((err) => {
     if (err.message === 'SOLD_OUT') {
       return null;

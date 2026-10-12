@@ -5,6 +5,6 @@ import { handlePaymentWebhook } from "../controllers/payment.controller.js";
 
 const router = Router();
 
-router.post("/webhook", handlePaymentWebhook);
+router.post("/payments", handlePaymentWebhook);
 
 export default router;
