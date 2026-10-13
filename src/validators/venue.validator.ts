@@ -3,7 +3,7 @@ import { z } from 'zod';
 export const createVenueSchema = z.object({
   name: z.string(),
   address: z.string().min(8),
-  city: z.string().min(1).optional(),
+  city: z.string().min(1),
   capacity: z.number().int().positive(),
 });
 

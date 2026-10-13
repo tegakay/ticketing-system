@@ -24,6 +24,9 @@ export async function createVenue(req: Request, res: Response) {
 }
 export async function updateVenue(req: Request, res: Response) {
     const { id } = req.params;
+    const existing = await prisma.venue.findUnique({ where: { venue_id: id } });
+    if (!existing) return res.status(404).json({ error: "Venue not found" });
+
     const { name, address, city, capacity } = req.body;
     const venue = await prisma.venue.update({
         where: { venue_id: id },
@@ -33,6 +36,9 @@ export async function updateVenue(req: Request, res: Response) {
 }
 export async function deleteVenue(req: Request, res: Response) {
     const { id } = req.params;
+    const existing = await prisma.venue.findUnique({ where: { venue_id: id } });
+    if (!existing) return res.status(404).json({ error: "Venue not found" });
+
     await prisma.venue.delete({
         where: { venue_id: id }
     });

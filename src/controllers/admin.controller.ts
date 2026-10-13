@@ -1,6 +1,7 @@
 import type { Request, Response } from "express";
 import { prisma } from "../lib/prisma.js";
 import { hashPassword } from "../utils/password.js";
+import { isUniqueViolation } from "../utils/prismaErrors.js";
 
 function omitPassword<T extends { password: string }>(user: T) {
   const { password: _password, ...rest } = user;
@@ -23,10 +24,15 @@ export async function getAdmin(req: Request, res: Response) {
 export async function createAdmin(req: Request, res: Response) {
   const { email, password, name } = req.body;
   const hashedPassword = await hashPassword(password);
-  const admin = await prisma.user.create({
-    data: { email, password: hashedPassword, name, role: "ADMIN" },
-  });
-  return res.status(201).json(omitPassword(admin));
+  try {
+    const admin = await prisma.user.create({
+      data: { email, password: hashedPassword, name, role: "ADMIN" },
+    });
+    return res.status(201).json(omitPassword(admin));
+  } catch (err) {
+    if (isUniqueViolation(err)) return res.status(409).json({ error: "Email already in use" });
+    throw err;
+  }
 }
 
 export async function updateAdmin(req: Request, res: Response) {
@@ -36,15 +42,20 @@ export async function updateAdmin(req: Request, res: Response) {
   if (!existing) return res.status(404).json({ error: "Admin not found" });
 
   const { email, password, name } = req.body;
-  const admin = await prisma.user.update({
-    where: { id: req.params.id },
-    data: {
-      email,
-      name,
-      ...(password ? { password: await hashPassword(password) } : {}),
-    },
-  });
-  return res.json(omitPassword(admin));
+  try {
+    const admin = await prisma.user.update({
+      where: { id: req.params.id },
+      data: {
+        email,
+        name,
+        ...(password ? { password: await hashPassword(password) } : {}),
+      },
+    });
+    return res.json(omitPassword(admin));
+  } catch (err) {
+    if (isUniqueViolation(err)) return res.status(409).json({ error: "Email already in use" });
+    throw err;
+  }
 }
 
 export async function deleteAdmin(req: Request, res: Response) {

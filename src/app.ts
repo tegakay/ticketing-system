@@ -10,7 +10,7 @@ registerGlobalMiddlewares(app);
 
 app.use('/api/v1', routes);
 
-app.get('/metrics', async (req: Request, res: Response) => {
+app.get('/metrics', async (_req: Request, res: Response) => {
   res.set('Content-Type', register.contentType);
   res.end(await register.metrics());
 });

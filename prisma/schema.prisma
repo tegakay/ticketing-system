@@ -74,7 +74,7 @@ model Order {
   total_price Float
   status      OrderStatus @default(pending)
   payment_id  String?
-  idempotency_key String?     @unique
+  idempotency_key String?
   expires_at  DateTime    // hold expiry while pending
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt

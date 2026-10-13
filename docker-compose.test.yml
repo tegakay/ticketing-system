@@ -1,0 +1,17 @@
+# Throwaway Postgres + Redis for `npm run test:integration`.
+# Ports are offset from the defaults so they don't collide with a dev instance.
+services:
+  postgres-test:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: test
+      POSTGRES_PASSWORD: test
+      POSTGRES_DB: ticketing_test
+    ports:
+      - "5433:5432"
+    tmpfs:
+      - /var/lib/postgresql/data
+  redis-test:
+    image: redis:7
+    ports:
+      - "6380:6379"

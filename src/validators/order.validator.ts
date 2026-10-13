@@ -11,7 +11,7 @@ export const updateOrderSchema = z
     event_id: z.string().optional(),
     quantity: z.number().int().positive().optional(),
     payment_id: z.string().optional(),
-    status: z.enum(['pending', 'completed', 'cancelled']).optional(),
+    status: z.enum(['pending', 'confirmed', 'cancelled', 'expired']).optional(),
   })
   .refine((data) => Object.keys(data).length > 0, {
     message: 'At least one field must be provided',

@@ -1,6 +1,7 @@
 import type { Request, Response } from "express";
 import { prisma } from "../lib/prisma.js";
 import { hashPassword } from "../utils/password.js";
+import { isUniqueViolation } from "../utils/prismaErrors.js";
 
 function omitPassword<T extends { password: string }>(user: T) {
   const { password: _password, ...rest } = user;
@@ -23,10 +24,15 @@ export async function getUser(req: Request, res: Response) {
 export async function createUser(req: Request, res: Response) {
   const { email, password, name } = req.body;
   const hashedPassword = await hashPassword(password);
-  const user = await prisma.user.create({
-    data: { email, password: hashedPassword, name, role: "USER" },
-  });
-  return res.status(201).json(omitPassword(user));
+  try {
+    const user = await prisma.user.create({
+      data: { email, password: hashedPassword, name, role: "USER" },
+    });
+    return res.status(201).json(omitPassword(user));
+  } catch (err) {
+    if (isUniqueViolation(err)) return res.status(409).json({ error: "Email already in use" });
+    throw err;
+  }
 }
 
 export async function updateUser(req: Request, res: Response) {
@@ -36,15 +42,20 @@ export async function updateUser(req: Request, res: Response) {
   if (!existing) return res.status(404).json({ error: "User not found" });
 
   const { email, password, name } = req.body;
-  const user = await prisma.user.update({
-    where: { id: req.params.id },
-    data: {
-      email,
-      name,
-      ...(password ? { password: await hashPassword(password) } : {}),
-    },
-  });
-  return res.json(omitPassword(user));
+  try {
+    const user = await prisma.user.update({
+      where: { id: req.params.id },
+      data: {
+        email,
+        name,
+        ...(password ? { password: await hashPassword(password) } : {}),
+      },
+    });
+    return res.json(omitPassword(user));
+  } catch (err) {
+    if (isUniqueViolation(err)) return res.status(409).json({ error: "Email already in use" });
+    throw err;
+  }
 }
 
 export async function deleteUser(req: Request, res: Response) {

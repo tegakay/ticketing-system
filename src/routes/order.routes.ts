@@ -9,7 +9,7 @@ import { updateOrderSchema } from '../validators/order.validator.js';
 
 const router = Router();
 
-router.get('/', asyncHandler(listOrderByUser));
+router.get('/', authenticate, asyncHandler(listOrderByUser));
 router.get('/:id',authenticate,  asyncHandler(getOrder));
 router.put(
   '/:id',

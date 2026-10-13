@@ -1,4 +1,4 @@
-import express, { Express } from 'express';
+import express, { type Express, type Request } from 'express';
 import {metricsMiddleware} from './metrics.js';
 
 /**
@@ -6,7 +6,13 @@ import {metricsMiddleware} from './metrics.js';
  * handlers, which must be mounted after routes instead.
  */
 export function registerGlobalMiddlewares(app: Express): void {
-  app.use(express.json());
+  app.use(
+    express.json({
+      verify: (req, _res, buf) => {
+        (req as Request).rawBody = buf;
+      },
+    }),
+  );
   app.use(express.urlencoded({ extended: true }));
   app.use(metricsMiddleware);
 }
